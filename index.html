@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Meccha Chameleon</title>
+<link rel="stylesheet" href="style.css">
+<script type="importmap">
+{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js" } }
+</script>
+</head>
+<body>
+<div id="app"></div>
+<canvas id="confetti"></canvas>
+
+<!-- ============ HUD ============ -->
+<div id="hud" class="hidden">
+  <div id="hudTop">
+    <div id="phaseBadge" class="badge">PREP</div>
+    <div id="timer">1:00</div>
+    <div id="hidersLeft" class="badge alt">👤 0</div>
+  </div>
+  <div id="roleBadge" class="badge big">HIDER</div>
+  <div id="crosshair"><div></div></div>
+  <div id="stamina"><div id="staminaFill"></div></div>
+  <div id="hint"></div>
+  <div id="feed"></div>
+  <div id="stun" class="hidden">STUNNED!</div>
+  <div id="waitWall" class="hidden"><div>WAIT FOR IT...</div><div id="waitCount">60</div></div>
+</div>
+<div id="popup"></div>
+
+<!-- ============ MENU ============ -->
+<div id="menu" class="screen">
+  <div class="titleWrap">
+    <div class="title jp">めっちゃ<br>カメレオン</div>
+    <div class="subtitle">MECCHA CHAMELEON</div>
+  </div>
+  <div class="menuBtns">
+    <button class="btn pink" id="btnPlay">PLAY!</button>
+    <button class="btn cyan" id="btnSettingsMenu">SETTINGS</button>
+  </div>
+  <div class="menuBlobs"><span></span><span></span><span></span></div>
+</div>
+
+<!-- ============ SETUP ============ -->
+<div id="setup" class="screen hidden">
+  <div class="panel wide">
+    <h2>GAME SETUP</h2>
+    <div class="row"><label>Mode</label><div class="seg" id="segMode">
+      <button data-v="basic" class="on">Basic</button><button data-v="infection">Infection</button><button data-v="double">Double</button><button data-v="reverse">Reverse</button></div></div>
+    <div class="modeDesc" id="modeDesc"></div>
+    <div class="row"><label>Map</label><div class="seg" id="segMap"></div></div>
+    <div class="row"><label>Role</label><div class="seg" id="segRole">
+      <button data-v="hider" class="on">Hider</button><button data-v="seeker">Seeker</button><button data-v="random">Random</button></div></div>
+    <div class="row"><label>Bots <b id="botCountV">5</b></label><input type="range" id="botCount" min="2" max="10" value="5"></div>
+    <div class="row"><label>Bot skill</label><div class="seg" id="segSkill">
+      <button data-v="easy">Easy</button><button data-v="medium" class="on">Medium</button><button data-v="hard">Hard</button></div></div>
+    <div class="row"><label>Prep <b id="prepV">75s</b></label><input type="range" id="prepTime" min="30" max="120" step="5" value="75"></div>
+    <div class="row"><label>Hunt <b id="huntV">3:00</b></label><input type="range" id="huntTime" min="60" max="300" step="15" value="180"></div>
+    <div class="row"><label>My size</label><div class="seg" id="segSize">
+      <button data-v="0.5">0.5x</button><button data-v="0.75">0.75x</button><button data-v="1" class="on">1x</button><button data-v="1.25">1.25x</button></div></div>
+    <div class="row"><label>Clones <b id="clonesV">2</b></label><input type="range" id="clones" min="0" max="3" value="2"></div>
+    <div class="btnRow">
+      <button class="btn gray" id="btnSetupBack">BACK</button>
+      <button class="btn pink" id="btnStart">START!</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ PAINT PANEL ============ -->
+<div id="paintPanel" class="hidden">
+  <div class="pp-col">
+    <div class="pp-title">PAINT <span class="pp-x" id="ppClose">E ✕</span></div>
+    <div id="svWrap"><canvas id="svCanvas" width="200" height="200"></canvas><div id="svKnob"></div></div>
+    <div id="hueWrap"><canvas id="hueCanvas" width="200" height="16"></canvas><div id="hueKnob"></div></div>
+    <div class="pp-row"><div id="curSwatch"></div><input id="hexInput" maxlength="7" spellcheck="false" value="#FFFFFF"></div>
+    <div id="recent"></div>
+    <div class="pp-tools" id="ppTools">
+      <button data-t="brush" class="on" title="Brush (B)">🖌️</button>
+      <button data-t="eraser" title="Eraser (X)">🧽</button>
+      <button data-t="fill" title="Bucket fill (G)">🪣</button>
+      <button data-t="picker" title="Eyedropper (I / right click)">💧</button>
+    </div>
+    <div class="pp-row small"><label>Fill</label><div class="seg tiny" id="segFill"><button data-v="body" class="on">Body</button><button data-v="part">Part</button></div></div>
+    <div class="pp-slider"><label>Size <b id="bsV"></b></label><input type="range" id="brushSize" min="0.01" max="0.4" step="0.005" value="0.08"></div>
+    <div class="pp-slider"><label>Hardness <b id="bhV"></b></label><input type="range" id="brushHard" min="0" max="1" step="0.01" value="0.6"></div>
+    <div class="pp-slider"><label>Opacity <b id="boV"></b></label><input type="range" id="brushOpacity" min="0.05" max="1" step="0.01" value="1"></div>
+    <div class="pp-slider"><label>Metallic <b id="bmV"></b></label><input type="range" id="matMetal" min="0" max="1" step="0.01" value="0"></div>
+    <div class="pp-slider"><label>Roughness <b id="brV"></b></label><input type="range" id="matRough" min="0" max="1" step="0.01" value="0.85"></div>
+    <div class="pp-btns">
+      <button id="ppSym" title="Symmetry">⇋ Sym</button>
+      <button id="ppUndo" title="Undo (Z)">↶</button>
+      <button id="ppRedo" title="Redo (Y)">↷</button>
+      <button id="ppReset" title="Reset">Reset</button>
+    </div>
+  </div>
+  <div id="previewBox"><div class="pv-label">SEEKER VIEW</div></div>
+  <div id="ppHelp">L-drag body: paint · L-drag background: orbit · R-click: eyedropper · Wheel: zoom · [ ] size · Z/Y undo/redo</div>
+</div>
+<div id="brushCursor" class="hidden"></div>
+
+<!-- ============ POSE WHEEL ============ -->
+<div id="poseWheel" class="hidden"><div id="poseItems"></div><div id="poseCenter">POSE</div></div>
+
+<!-- ============ PAUSE ============ -->
+<div id="pause" class="screen dim hidden">
+  <div class="panel">
+    <h2>PAUSED</h2>
+    <button class="btn pink" id="btnResume">RESUME</button>
+    <button class="btn cyan" id="btnSettingsPause">SETTINGS</button>
+    <button class="btn gray" id="btnQuit">QUIT TO MENU</button>
+  </div>
+</div>
+
+<!-- ============ SETTINGS ============ -->
+<div id="settings" class="screen dim hidden">
+  <div class="panel">
+    <h2>SETTINGS</h2>
+    <div class="row"><label>Sensitivity <b id="sensV"></b></label><input type="range" id="sSens" min="0.2" max="3" step="0.05"></div>
+    <div class="row"><label>FOV <b id="fovV"></b></label><input type="range" id="sFov" min="55" max="105" step="1"></div>
+    <div class="row"><label>Volume <b id="volV"></b></label><input type="range" id="sVol" min="0" max="1" step="0.01"></div>
+    <div class="row"><label>Music <b id="musV"></b></label><input type="range" id="sMus" min="0" max="1" step="0.01"></div>
+    <div class="row"><label>Quality</label><div class="seg" id="segQuality"><button data-v="low">Low</button><button data-v="medium">Med</button><button data-v="high">High</button></div></div>
+    <button class="btn pink" id="btnSettingsBack">DONE</button>
+  </div>
+</div>
+
+<!-- ============ RESULTS ============ -->
+<div id="results" class="screen dim hidden">
+  <div class="panel wide">
+    <h2 id="resTitle">HIDERS WIN!</h2>
+    <div id="resSub"></div>
+    <div id="resCards"></div>
+    <div class="btnRow">
+      <button class="btn gray" id="btnResMenu">MENU</button>
+      <button class="btn pink" id="btnNext">NEXT ROUND ▶</button>
+    </div>
+  </div>
+</div>
+
+<div id="loading" class="screen"><div class="title jp small">めっちゃ<br>カメレオン</div><div class="subtitle">loading…</div></div>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
